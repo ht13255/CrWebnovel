@@ -12,6 +12,6 @@ COPY . .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Streamlit 앱 실행
+# Streamlit 실행
 EXPOSE 8501
 CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.enableCORS=false"]
