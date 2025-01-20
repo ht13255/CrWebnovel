@@ -1,22 +1,95 @@
-import sys
-sys.path.append("/path/to/novel-crawler")
-sys.path.append("/path/to/Webnovel")
-
 import streamlit as st
+import requests
+from bs4 import BeautifulSoup
 import os
-from novel_crawler import crawl_moonpia  # 문피아 크롤러
-from webnovel_crawler import crawl_naver_series  # 네이버 시리즈 크롤러
-from novelpia_crawler import crawl_novelpia  # 노벨피아 크롤러
 
 st.title("소설 크롤러 및 TXT 변환기")
 
-# 크롤러 선택
+# 크롤링 함수들
+def crawl_moonpia(novel_url):
+    """문피아 크롤러"""
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    response = requests.get(novel_url, headers=headers)
+    if response.status_code != 200:
+        raise Exception("문피아 페이지에 접근할 수 없습니다.")
+    
+    soup = BeautifulSoup(response.content, "html.parser")
+    title = soup.find("meta", property="og:title")["content"]
+    chapters = soup.find_all("a", class_="chapter-link")
+    
+    novel_text = ""
+    for chapter in chapters:
+        chapter_url = chapter["href"]
+        chapter_response = requests.get(chapter_url, headers=headers)
+        chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
+        content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
+        novel_text += f"{content}\n\n"
+    
+    file_path = f"{title}.txt"
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(novel_text)
+    return file_path
+
+def crawl_naver_series(novel_url):
+    """네이버 시리즈 크롤러"""
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    response = requests.get(novel_url, headers=headers)
+    if response.status_code != 200:
+        raise Exception("네이버 시리즈 페이지에 접근할 수 없습니다.")
+    
+    soup = BeautifulSoup(response.content, "html.parser")
+    title = soup.find("meta", property="og:title")["content"]
+    chapters = soup.find_all("a", class_="episode-link")
+    
+    novel_text = ""
+    for chapter in chapters:
+        chapter_url = chapter["href"]
+        chapter_response = requests.get(chapter_url, headers=headers)
+        chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
+        content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
+        novel_text += f"{content}\n\n"
+    
+    file_path = f"{title}.txt"
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(novel_text)
+    return file_path
+
+def crawl_novelpia(novel_url):
+    """노벨피아 크롤러"""
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    response = requests.get(novel_url, headers=headers)
+    if response.status_code != 200:
+        raise Exception("노벨피아 페이지에 접근할 수 없습니다.")
+    
+    soup = BeautifulSoup(response.content, "html.parser")
+    title = soup.find("meta", property="og:title")["content"]
+    chapters = soup.find_all("a", class_="chapter-link")
+    
+    novel_text = ""
+    for chapter in chapters:
+        chapter_url = chapter["href"]
+        chapter_response = requests.get(chapter_url, headers=headers)
+        chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
+        content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
+        novel_text += f"{content}\n\n"
+    
+    file_path = f"{title}.txt"
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(novel_text)
+    return file_path
+
+# Streamlit 인터페이스
 option = st.selectbox(
     "크롤링할 사이트를 선택하세요:",
     ["문피아", "네이버 시리즈", "노벨피아"]
 )
 
-# URL 입력
 novel_url = st.text_input("소설 페이지 링크를 입력하세요:")
 
 if st.button("크롤링 시작"):
