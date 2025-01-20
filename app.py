@@ -2,14 +2,16 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 import os
+import time
 
+# Streamlit 타이틀
 st.title("소설 크롤러 및 TXT 변환기")
 
 # 크롤링 함수들
 def crawl_moonpia(novel_url):
     """문피아 크롤러"""
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     response = requests.get(novel_url, headers=headers)
     if response.status_code != 200:
@@ -26,6 +28,7 @@ def crawl_moonpia(novel_url):
         chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
         content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
         novel_text += f"{content}\n\n"
+        time.sleep(2)  # 요청 간 딜레이
     
     file_path = f"{title}.txt"
     with open(file_path, "w", encoding="utf-8") as file:
@@ -35,7 +38,7 @@ def crawl_moonpia(novel_url):
 def crawl_naver_series(novel_url):
     """네이버 시리즈 크롤러"""
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     response = requests.get(novel_url, headers=headers)
     if response.status_code != 200:
@@ -52,6 +55,7 @@ def crawl_naver_series(novel_url):
         chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
         content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
         novel_text += f"{content}\n\n"
+        time.sleep(2)  # 요청 간 딜레이
     
     file_path = f"{title}.txt"
     with open(file_path, "w", encoding="utf-8") as file:
@@ -61,7 +65,7 @@ def crawl_naver_series(novel_url):
 def crawl_novelpia(novel_url):
     """노벨피아 크롤러"""
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     response = requests.get(novel_url, headers=headers)
     if response.status_code != 200:
@@ -78,6 +82,7 @@ def crawl_novelpia(novel_url):
         chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
         content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
         novel_text += f"{content}\n\n"
+        time.sleep(2)  # 요청 간 딜레이
     
     file_path = f"{title}.txt"
     with open(file_path, "w", encoding="utf-8") as file:
