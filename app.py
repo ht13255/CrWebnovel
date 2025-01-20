@@ -1,3 +1,7 @@
+import sys
+sys.path.append("/path/to/novel-crawler")
+sys.path.append("/path/to/Webnovel")
+
 import streamlit as st
 import os
 from novel_crawler import crawl_moonpia  # 문피아 크롤러
