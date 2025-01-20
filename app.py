@@ -1,107 +1,119 @@
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-import os
 import time
+import random
+import os
 
-# Streamlit 타이틀
-st.title("소설 크롤러 및 TXT 변환기")
+# 요청 함수: 재시도 및 딜레이 포함
+def request_with_retry(session, url, headers, retries=3, delay=2):
+    for attempt in range(retries):
+        try:
+            response = session.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                return response
+            else:
+                time.sleep(delay + random.uniform(0, 1))  # 랜덤 딜레이
+        except Exception as e:
+            time.sleep(delay)
+    raise Exception(f"요청 실패: {url}")
 
-# 크롤링 함수들
+# 문피아 크롤러
 def crawl_moonpia(novel_url):
-    """문피아 크롤러"""
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Referer": "https://novelpia.com",
+        "Accept-Language": "ko-KR,ko;q=0.9",
     }
-    response = requests.get(novel_url, headers=headers)
-    if response.status_code != 200:
-        raise Exception("문피아 페이지에 접근할 수 없습니다.")
-    
+    session = requests.Session()
+    response = request_with_retry(session, novel_url, headers)
+
     soup = BeautifulSoup(response.content, "html.parser")
     title = soup.find("meta", property="og:title")["content"]
     chapters = soup.find_all("a", class_="chapter-link")
-    
+
     novel_text = ""
     for chapter in chapters:
         chapter_url = chapter["href"]
-        chapter_response = requests.get(chapter_url, headers=headers)
+        chapter_response = request_with_retry(session, chapter_url, headers)
         chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
         content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
         novel_text += f"{content}\n\n"
-        time.sleep(2)  # 요청 간 딜레이
-    
-    file_path = f"{title}.txt"
+        time.sleep(random.uniform(1, 3))  # 요청 간 무작위 대기
+
+    file_path = f"{title}_moonpia.txt"
     with open(file_path, "w", encoding="utf-8") as file:
         file.write(novel_text)
     return file_path
 
+# 네이버 시리즈 크롤러
 def crawl_naver_series(novel_url):
-    """네이버 시리즈 크롤러"""
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
     }
-    response = requests.get(novel_url, headers=headers)
-    if response.status_code != 200:
-        raise Exception("네이버 시리즈 페이지에 접근할 수 없습니다.")
-    
+    session = requests.Session()
+    response = request_with_retry(session, novel_url, headers)
+
     soup = BeautifulSoup(response.content, "html.parser")
     title = soup.find("meta", property="og:title")["content"]
     chapters = soup.find_all("a", class_="episode-link")
-    
+
     novel_text = ""
     for chapter in chapters:
         chapter_url = chapter["href"]
-        chapter_response = requests.get(chapter_url, headers=headers)
+        chapter_response = request_with_retry(session, chapter_url, headers)
         chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
         content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
         novel_text += f"{content}\n\n"
-        time.sleep(2)  # 요청 간 딜레이
-    
-    file_path = f"{title}.txt"
+        time.sleep(random.uniform(1, 3))  # 요청 간 무작위 대기
+
+    file_path = f"{title}_naver.txt"
     with open(file_path, "w", encoding="utf-8") as file:
         file.write(novel_text)
     return file_path
 
+# 노벨피아 크롤러
 def crawl_novelpia(novel_url):
-    """노벨피아 크롤러"""
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Referer": "https://novelpia.com",
     }
-    response = requests.get(novel_url, headers=headers)
-    if response.status_code != 200:
-        raise Exception("노벨피아 페이지에 접근할 수 없습니다.")
-    
+    session = requests.Session()
+    response = request_with_retry(session, novel_url, headers)
+
     soup = BeautifulSoup(response.content, "html.parser")
     title = soup.find("meta", property="og:title")["content"]
     chapters = soup.find_all("a", class_="chapter-link")
-    
+
     novel_text = ""
     for chapter in chapters:
         chapter_url = chapter["href"]
-        chapter_response = requests.get(chapter_url, headers=headers)
+        chapter_response = request_with_retry(session, chapter_url, headers)
         chapter_soup = BeautifulSoup(chapter_response.content, "html.parser")
         content = chapter_soup.find("div", class_="content").get_text("\n", strip=True)
         novel_text += f"{content}\n\n"
-        time.sleep(2)  # 요청 간 딜레이
-    
-    file_path = f"{title}.txt"
+        time.sleep(random.uniform(1, 3))  # 요청 간 무작위 대기
+
+    file_path = f"{title}_novelpia.txt"
     with open(file_path, "w", encoding="utf-8") as file:
         file.write(novel_text)
     return file_path
 
-# Streamlit 인터페이스
-option = st.selectbox(
-    "크롤링할 사이트를 선택하세요:",
-    ["문피아", "네이버 시리즈", "노벨피아"]
-)
+# Streamlit 앱
+st.title("소설 크롤러 및 TXT 변환기")
+st.markdown("크롤링할 소설 사이트를 선택하고 링크를 입력하세요.")
 
+# UI 구성
+option = st.selectbox("크롤링할 사이트를 선택하세요:", ["문피아", "네이버 시리즈", "노벨피아"])
 novel_url = st.text_input("소설 페이지 링크를 입력하세요:")
 
+# 버튼 클릭 시 크롤링 시작
 if st.button("크롤링 시작"):
     if not novel_url:
         st.error("소설 링크를 입력하세요.")
     else:
         try:
+            # 크롤링 실행
             if option == "문피아":
                 file_path = crawl_moonpia(novel_url)
             elif option == "네이버 시리즈":
@@ -111,7 +123,8 @@ if st.button("크롤링 시작"):
             else:
                 st.error("유효하지 않은 옵션입니다.")
                 file_path = None
-            
+
+            # 성공 시 다운로드 버튼 생성
             if file_path:
                 st.success(f"크롤링이 완료되었습니다: {file_path}")
                 with open(file_path, "rb") as file:
