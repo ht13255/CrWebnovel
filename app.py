@@ -2,15 +2,33 @@ import os
 import time
 import zipfile
 from io import BytesIO
+import subprocess
 import streamlit as st
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 import chromedriver_autoinstaller
 import shutil
-import subprocess
 
 
+# Chrome 설치 대안 방법
+def install_chrome_alternative():
+    """Chrome 실행 파일 직접 다운로드 및 설치"""
+    chrome_url = "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+    chrome_deb = "/tmp/google-chrome-stable_current_amd64.deb"
+
+    # Chrome 다운로드
+    if not os.path.exists(chrome_deb):
+        st.write("Chrome 설치 파일 다운로드 중...")
+        subprocess.run(["wget", chrome_url, "-O", chrome_deb], check=True)
+    
+    # Chrome 실행 파일 설치
+    st.write("Chrome 실행 파일 설치 중...")
+    subprocess.run(["dpkg", "-i", chrome_deb], check=True)
+    subprocess.run(["apt-get", "-f", "install"], check=True)
+
+
+# Chrome 설치 함수 (기본 방법)
 def install_chrome():
     """Chrome 브라우저 다운로드 및 설치"""
     chrome_url = "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
@@ -30,7 +48,8 @@ def install_chrome():
         st.error("Chrome 설치 중 오류 발생. 대안 방법 실행 중...")
         install_chrome_alternative()
 
-# ChromeDriver 초기화 함수
+
+# Selenium ChromeDriver 초기화
 def init_driver():
     """Selenium ChromeDriver 초기화"""
     chrome_path = shutil.which("google-chrome")
