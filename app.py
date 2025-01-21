@@ -11,7 +11,6 @@ import shutil
 import subprocess
 
 
-# Chrome 설치 함수
 def install_chrome():
     """Chrome 브라우저 다운로드 및 설치"""
     chrome_url = "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
@@ -19,12 +18,17 @@ def install_chrome():
     
     # Chrome 다운로드
     if not os.path.exists(chrome_deb):
+        st.write("Chrome 설치 파일 다운로드 중...")
         subprocess.run(["wget", chrome_url, "-O", chrome_deb], check=True)
     
     # Chrome 설치
-    subprocess.run(["apt-get", "update"], check=True)
-    subprocess.run(["apt-get", "install", "-y", "./" + chrome_deb], check=True)
-
+    st.write("APT 패키지 데이터베이스 업데이트 중...")
+    try:
+        subprocess.run(["apt-get", "update"], check=True)
+        subprocess.run(["apt-get", "install", "-y", "./" + chrome_deb], check=True)
+    except subprocess.CalledProcessError as e:
+        st.error(f"Chrome 설치 중 오류 발생: {e}")
+        raise e
 
 # ChromeDriver 초기화 함수
 def init_driver():
