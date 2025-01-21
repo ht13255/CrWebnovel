@@ -26,9 +26,9 @@ def install_chrome():
     try:
         subprocess.run(["apt-get", "update"], check=True)
         subprocess.run(["apt-get", "install", "-y", "./" + chrome_deb], check=True)
-    except subprocess.CalledProcessError as e:
-        st.error(f"Chrome 설치 중 오류 발생: {e}")
-        raise e
+    except subprocess.CalledProcessError:
+        st.error("Chrome 설치 중 오류 발생. 대안 방법 실행 중...")
+        install_chrome_alternative()
 
 # ChromeDriver 초기화 함수
 def init_driver():
