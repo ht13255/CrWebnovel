@@ -1,45 +1,48 @@
-# streamlit_novelpia_selenium_crawler.py
-
 import os
 import time
 import zipfile
 from io import BytesIO
+import streamlit as st
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import streamlit as st
+import chromedriver_autoinstaller
 
-# Streamlit 설정
+
+# ChromeDriver 자동 설치
+chromedriver_autoinstaller.install()
+
+
+# 브라우저 설정
+def init_driver():
+    from selenium.webdriver.chrome.options import Options
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # 브라우저를 백그라운드에서 실행
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    service = Service()
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    return driver
+
+
+# Streamlit 앱 설정
 st.title("노벨피아 소설 크롤러")
-st.write("Selenium을 사용해 동적 콘텐츠를 크롤링합니다.")
+st.write("Selenium을 사용하여 노벨피아 소설을 크롤링합니다.")
 
 # 사용자 입력
 url = st.text_input("소설 페이지 URL을 입력하세요:", "https://novelpia.com/novel/222765")
 output_dir = "novel_contents"
 
 if st.button("크롤링 시작"):
-    if "novelpia.com" not in url:
+    if not url or "novelpia.com" not in url:
         st.error("올바른 노벨피아 URL을 입력하세요.")
     else:
         try:
-            # Chrome WebDriver 설정
-            chrome_options = Options()
-            chrome_options.add_argument("--headless")  # 백그라운드 실행
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-
-            service = Service("path/to/chromedriver")  # 크롬 드라이버 경로 설정
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-
-            # 사이트 열기
+            # Selenium 드라이버 초기화
+            driver = init_driver()
             driver.get(url)
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "episode-item")))
 
-            # 소설 기본 정보
+            # 소설 기본 정보 가져오기
             title = driver.title
             st.write(f"**소설 제목**: {title}")
 
@@ -47,7 +50,7 @@ if st.button("크롤링 시작"):
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-            # 화별 정보 가져오기
+            # 화별 정보 추출
             episodes = driver.find_elements(By.CLASS_NAME, "episode-item")
             episode_links = []
             for ep in episodes:
@@ -61,9 +64,7 @@ if st.button("크롤링 시작"):
 
                 # 각 화로 이동
                 driver.get(ep["link"])
-                WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "novel-content"))
-                )
+                time.sleep(2)  # 대기 시간 추가 (크롤링 방지 우회)
 
                 # 화 내용 가져오기
                 content = driver.find_element(By.CLASS_NAME, "novel-content").text
@@ -73,9 +74,6 @@ if st.button("크롤링 시작"):
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 st.write(f"{ep['title']} 저장 완료: {file_path}")
-
-                # 딜레이 추가
-                time.sleep(2)
 
             # ZIP 압축 생성
             zip_buffer = BytesIO()
@@ -95,7 +93,7 @@ if st.button("크롤링 시작"):
                 mime="application/zip",
             )
 
-            # 드라이버 종료
+            # Selenium 드라이버 종료
             driver.quit()
 
         except Exception as e:
