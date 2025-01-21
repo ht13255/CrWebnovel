@@ -11,50 +11,31 @@ import chromedriver_autoinstaller
 import shutil
 
 
-# Chrome 설치 대안 방법
-def install_chrome_alternative():
-    """Chrome 실행 파일 직접 다운로드 및 설치"""
+# Headless Chrome 바이너리 설치
+def install_headless_chrome():
+    """Headless Chrome 바이너리를 다운로드하고 실행 경로를 설정합니다."""
     chrome_url = "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
     chrome_deb = "/tmp/google-chrome-stable_current_amd64.deb"
 
-    # Chrome 다운로드
+    # Chrome 바이너리 다운로드
     if not os.path.exists(chrome_deb):
-        st.write("Chrome 설치 파일 다운로드 중...")
+        st.write("Headless Chrome 바이너리를 다운로드 중...")
         subprocess.run(["wget", chrome_url, "-O", chrome_deb], check=True)
-    
-    # Chrome 실행 파일 설치
-    st.write("Chrome 실행 파일 설치 중...")
-    subprocess.run(["dpkg", "-i", chrome_deb], check=True)
-    subprocess.run(["apt-get", "-f", "install"], check=True)
 
-
-# Chrome 설치 함수 (기본 방법)
-def install_chrome():
-    """Chrome 브라우저 다운로드 및 설치"""
-    chrome_url = "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
-    chrome_deb = "/tmp/google-chrome-stable_current_amd64.deb"
-    
-    # Chrome 다운로드
-    if not os.path.exists(chrome_deb):
-        st.write("Chrome 설치 파일 다운로드 중...")
-        subprocess.run(["wget", chrome_url, "-O", chrome_deb], check=True)
-    
-    # Chrome 설치
-    st.write("APT 패키지 데이터베이스 업데이트 중...")
-    try:
-        subprocess.run(["apt-get", "update"], check=True)
-        subprocess.run(["apt-get", "install", "-y", "./" + chrome_deb], check=True)
-    except subprocess.CalledProcessError:
-        st.error("Chrome 설치 중 오류 발생. 대안 방법 실행 중...")
-        install_chrome_alternative()
+    # Chrome 바이너리 설치
+    st.write("Headless Chrome을 설치 중...")
+    result = subprocess.run(["dpkg", "-i", chrome_deb], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        st.write("의존성 설치 중...")
+        subprocess.run(["apt-get", "-f", "install", "-y"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 # Selenium ChromeDriver 초기화
 def init_driver():
-    """Selenium ChromeDriver 초기화"""
+    """Selenium ChromeDriver를 초기화합니다."""
     chrome_path = shutil.which("google-chrome")
     if not chrome_path:
-        raise ValueError("Chrome 브라우저를 찾을 수 없습니다. Chrome 설치를 확인하세요.")
+        raise ValueError("Chrome 브라우저를 찾을 수 없습니다. 설치를 확인하세요.")
 
     # Chrome 옵션 설정
     chrome_options = Options()
@@ -72,11 +53,11 @@ def init_driver():
 st.title("노벨피아 소설 크롤러")
 st.write("Selenium을 사용하여 노벨피아 소설을 크롤링합니다.")
 
-# Chrome 설치 실행
+# Headless Chrome 설치 실행
 try:
-    install_chrome()
+    install_headless_chrome()
 except Exception as e:
-    st.error(f"Chrome 설치 중 오류 발생: {e}")
+    st.error(f"Headless Chrome 설치 중 오류 발생: {e}")
 
 # 사용자 입력
 url = st.text_input("소설 페이지 URL을 입력하세요:", "https://novelpia.com/novel/222765")
