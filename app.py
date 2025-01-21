@@ -5,21 +5,29 @@ from io import BytesIO
 import streamlit as st
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 import chromedriver_autoinstaller
+import shutil
 
 
 # ChromeDriver 자동 설치
 chromedriver_autoinstaller.install()
 
 
-# 브라우저 설정
+# 브라우저 초기화 함수
 def init_driver():
-    from selenium.webdriver.chrome.options import Options
+    # Chrome 브라우저 경로 확인
+    chrome_path = shutil.which("google-chrome")
+    if not chrome_path:
+        raise ValueError("Chrome 브라우저를 찾을 수 없습니다. 서버에 Chrome을 설치하세요.")
+
+    # Chrome 옵션 설정
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # 브라우저를 백그라운드에서 실행
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+
+    # ChromeDriver 서비스 초기화
     service = Service()
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
@@ -42,15 +50,15 @@ if st.button("크롤링 시작"):
             driver = init_driver()
             driver.get(url)
 
-            # 소설 기본 정보 가져오기
+            # 소설 제목 가져오기
             title = driver.title
-            st.write(f"**소설 제목**: {title}")
+            st.write(f"소설 제목: {title}")
 
             # 저장 디렉토리 확인 및 생성
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-            # 화별 정보 추출
+            # 화별 정보 가져오기
             episodes = driver.find_elements(By.CLASS_NAME, "episode-item")
             episode_links = []
             for ep in episodes:
