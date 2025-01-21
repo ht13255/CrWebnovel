@@ -1,19 +1,21 @@
-# streamlit_novelpia_crawler_to_txt.py
+# streamlit_novelpia_crawler_download.py
 
 import os
 import time
 import random
 import requests
+import zipfile
+from io import BytesIO
 from bs4 import BeautifulSoup
 import streamlit as st
 
 # Streamlit 설정
 st.title("노벨피아 소설 크롤러")
-st.write("소설 내용을 크롤링하고 텍스트 파일로 저장합니다.")
+st.write("소설 내용을 크롤링하고 텍스트 파일로 저장하며, 다운로드할 수 있습니다.")
 
 # 사용자 입력
 url = st.text_input("소설 페이지 URL을 입력하세요:", "https://novelpia.com/novel/222765")
-output_dir = st.text_input("저장할 디렉토리:", "./novel_contents")
+output_dir = "novel_contents"
 
 if st.button("크롤링 시작"):
     if "novelpia.com" not in url:
@@ -67,7 +69,23 @@ if st.button("크롤링 시작"):
                 # 딜레이 추가 (크롤링 방지 우회)
                 time.sleep(random.uniform(2, 5))
 
-            st.success(f"모든 화 크롤링 완료! 저장 경로: {output_dir}")
+            # ZIP 압축 생성
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                for file_name in os.listdir(output_dir):
+                    file_path = os.path.join(output_dir, file_name)
+                    zip_file.write(file_path, arcname=file_name)
+
+            zip_buffer.seek(0)
+
+            # 다운로드 버튼 추가
+            st.success(f"모든 화 크롤링 완료! 다운로드 버튼을 클릭하세요.")
+            st.download_button(
+                label="소설 전체 다운로드 (ZIP)",
+                data=zip_buffer,
+                file_name=f"{title}.zip",
+                mime="application/zip",
+            )
 
         except Exception as e:
             st.error(f"오류 발생: {e}")
