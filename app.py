@@ -8,18 +8,30 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 import chromedriver_autoinstaller
 import shutil
+import subprocess
 
 
-# ChromeDriver 자동 설치
-chromedriver_autoinstaller.install()
+# Chrome 설치 함수
+def install_chrome():
+    """Chrome 브라우저 다운로드 및 설치"""
+    chrome_url = "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+    chrome_deb = "/tmp/google-chrome-stable_current_amd64.deb"
+    
+    # Chrome 다운로드
+    if not os.path.exists(chrome_deb):
+        subprocess.run(["wget", chrome_url, "-O", chrome_deb], check=True)
+    
+    # Chrome 설치
+    subprocess.run(["apt-get", "update"], check=True)
+    subprocess.run(["apt-get", "install", "-y", "./" + chrome_deb], check=True)
 
 
-# 브라우저 초기화 함수
+# ChromeDriver 초기화 함수
 def init_driver():
-    # Chrome 브라우저 경로 확인
+    """Selenium ChromeDriver 초기화"""
     chrome_path = shutil.which("google-chrome")
     if not chrome_path:
-        raise ValueError("Chrome 브라우저를 찾을 수 없습니다. 서버에 Chrome을 설치하세요.")
+        raise ValueError("Chrome 브라우저를 찾을 수 없습니다. Chrome 설치를 확인하세요.")
 
     # Chrome 옵션 설정
     chrome_options = Options()
@@ -37,6 +49,12 @@ def init_driver():
 st.title("노벨피아 소설 크롤러")
 st.write("Selenium을 사용하여 노벨피아 소설을 크롤링합니다.")
 
+# Chrome 설치 실행
+try:
+    install_chrome()
+except Exception as e:
+    st.error(f"Chrome 설치 중 오류 발생: {e}")
+
 # 사용자 입력
 url = st.text_input("소설 페이지 URL을 입력하세요:", "https://novelpia.com/novel/222765")
 output_dir = "novel_contents"
@@ -52,7 +70,7 @@ if st.button("크롤링 시작"):
 
             # 소설 제목 가져오기
             title = driver.title
-            st.write(f"소설 제목: {title}")
+            st.write(f"**소설 제목**: {title}")
 
             # 저장 디렉토리 확인 및 생성
             if not os.path.exists(output_dir):
