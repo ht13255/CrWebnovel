@@ -1,17 +1,20 @@
-# streamlit_novelpia_crawler_download.py
+# streamlit_novelpia_selenium_crawler.py
 
 import os
 import time
-import random
-import requests
 import zipfile
 from io import BytesIO
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import streamlit as st
 
 # Streamlit 설정
 st.title("노벨피아 소설 크롤러")
-st.write("소설 내용을 크롤링하고 텍스트 파일로 저장하며, 다운로드할 수 있습니다.")
+st.write("Selenium을 사용해 동적 콘텐츠를 크롤링합니다.")
 
 # 사용자 입력
 url = st.text_input("소설 페이지 URL을 입력하세요:", "https://novelpia.com/novel/222765")
@@ -22,43 +25,48 @@ if st.button("크롤링 시작"):
         st.error("올바른 노벨피아 URL을 입력하세요.")
     else:
         try:
-            # 세션 초기화 및 헤더 설정 (우회)
-            session = requests.Session()
-            headers = {
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                )
-            }
+            # Chrome WebDriver 설정
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")  # 백그라운드 실행
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
 
-            # 메인 페이지 요청
-            response = session.get(url, headers=headers)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
+            service = Service("path/to/chromedriver")  # 크롬 드라이버 경로 설정
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+
+            # 사이트 열기
+            driver.get(url)
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "episode-item")))
 
             # 소설 기본 정보
-            title = soup.find("title").get_text(strip=True)
+            title = driver.title
             st.write(f"**소설 제목**: {title}")
 
             # 저장 디렉토리 확인 및 생성
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-            # 화별 정보 추출
-            episodes = []
-            for episode in soup.select(".episode-item"):
-                episode_title = episode.select_one(".title").get_text(strip=True)
-                episode_link = "https://novelpia.com" + episode.select_one("a")["href"]
-                episodes.append({"title": episode_title, "link": episode_link})
+            # 화별 정보 가져오기
+            episodes = driver.find_elements(By.CLASS_NAME, "episode-item")
+            episode_links = []
+            for ep in episodes:
+                ep_title = ep.find_element(By.CLASS_NAME, "title").text
+                ep_link = ep.find_element(By.TAG_NAME, "a").get_attribute("href")
+                episode_links.append({"title": ep_title, "link": ep_link})
 
             # 각 화 크롤링 및 저장
-            for idx, ep in enumerate(episodes, start=1):
-                st.write(f"크롤링 중: {ep['title']} ({idx}/{len(episodes)})")
-                ep_response = session.get(ep["link"], headers=headers)
-                ep_response.raise_for_status()
-                ep_soup = BeautifulSoup(ep_response.text, "html.parser")
+            for idx, ep in enumerate(episode_links, start=1):
+                st.write(f"크롤링 중: {ep['title']} ({idx}/{len(episode_links)})")
 
-                # 화 내용 추출
-                content = ep_soup.select_one(".novel-content").get_text(strip=True)
+                # 각 화로 이동
+                driver.get(ep["link"])
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "novel-content"))
+                )
+
+                # 화 내용 가져오기
+                content = driver.find_element(By.CLASS_NAME, "novel-content").text
 
                 # 파일로 저장
                 file_path = os.path.join(output_dir, f"{idx:03d}_{ep['title']}.txt")
@@ -66,8 +74,8 @@ if st.button("크롤링 시작"):
                     f.write(content)
                 st.write(f"{ep['title']} 저장 완료: {file_path}")
 
-                # 딜레이 추가 (크롤링 방지 우회)
-                time.sleep(random.uniform(2, 5))
+                # 딜레이 추가
+                time.sleep(2)
 
             # ZIP 압축 생성
             zip_buffer = BytesIO()
@@ -86,6 +94,9 @@ if st.button("크롤링 시작"):
                 file_name=f"{title}.zip",
                 mime="application/zip",
             )
+
+            # 드라이버 종료
+            driver.quit()
 
         except Exception as e:
             st.error(f"오류 발생: {e}")
